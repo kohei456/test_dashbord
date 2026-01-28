@@ -155,6 +155,11 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/evidence/*'
 
   # CodeBuildプロジェクト
   CodeBuildProject:
@@ -176,6 +181,21 @@ Resources:
             Value: !Ref CloudFrontDistribution
           - Name: AWS_DEFAULT_REGION
             Value: !Ref AWS::Region
+          - Name: EVIDENCE_OPENSEARCH_ENDPOINT
+            Type: PARAMETER_STORE
+            Value: /evidence/opensearch-endpoint
+          - Name: EVIDENCE_OPENSEARCH_INDEX
+            Type: PARAMETER_STORE
+            Value: /evidence/opensearch-index
+          - Name: EVIDENCE_OPENSEARCH_USERNAME
+            Type: PARAMETER_STORE
+            Value: /evidence/opensearch-username
+          - Name: EVIDENCE_OPENSEARCH_PASSWORD
+            Type: PARAMETER_STORE
+            Value: /evidence/opensearch-password
+          - Name: EVIDENCE_OPENSEARCH_SSL_VERIFY
+            Type: PARAMETER_STORE
+            Value: /evidence/opensearch-ssl-verify
       Source:
         Type: GITHUB
         Location: !Ref GitHubRepo

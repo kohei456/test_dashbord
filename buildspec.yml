@@ -20,6 +20,8 @@ phases:
   build:
     commands:
       - echo "Evidenceの静的サイトをビルド中..."
+      - echo "データソースを生成中..."
+      - npm run sources || echo "データソース生成をスキップ"
       - npm run build
       - echo "ビルド完了"
       - ls -la build/
