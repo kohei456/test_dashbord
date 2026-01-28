@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Evidence Template Project
 
 ## Using Codespaces
@@ -46,3 +47,6 @@ Check out the docs for [alternative install methods](https://docs.evidence.dev/g
 - [Github](https://github.com/evidence-dev/evidence)
 - [Slack Community](https://slack.evidence.dev/)
 - [Evidence Home Page](https://www.evidence.dev)
+=======
+# test_dashbord
+>>>>>>> 370f975b253c7f422e5206ea8ab5786931eae25c
