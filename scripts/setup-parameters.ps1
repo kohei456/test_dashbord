@@ -54,6 +54,28 @@ aws ssm put-parameter `
   --region $AWS_REGION `
   --overwrite
 
+# Identity Store ID
+Write-Host "Identity Store IDを保存中..." -ForegroundColor Yellow
+Write-Host "Identity Store IDを入力してください（例: d-1234567890）:" -ForegroundColor Cyan
+$IDENTITY_STORE_ID = Read-Host
+aws ssm put-parameter `
+  --name "/evidence/identity-store-id" `
+  --value $IDENTITY_STORE_ID `
+  --type "String" `
+  --region $AWS_REGION `
+  --overwrite
+
+# SSO Instance ARN
+Write-Host "SSO Instance ARNを保存中..." -ForegroundColor Yellow
+Write-Host "SSO Instance ARNを入力してください（例: arn:aws:sso:::instance/ssoins-1234567890abcdef）:" -ForegroundColor Cyan
+$SSO_INSTANCE_ARN = Read-Host
+aws ssm put-parameter `
+  --name "/evidence/sso-instance-arn" `
+  --value $SSO_INSTANCE_ARN `
+  --type "String" `
+  --region $AWS_REGION `
+  --overwrite
+
 Write-Host ""
 Write-Host "完了しました！" -ForegroundColor Green
 Write-Host ""

@@ -51,6 +51,28 @@ aws ssm put-parameter \
   --region "$AWS_REGION" \
   --overwrite
 
+# Identity Store ID
+echo "Identity Store IDを入力してください（例: d-1234567890）:"
+read IDENTITY_STORE_ID
+
+aws ssm put-parameter \
+  --name "/evidence/identity-store-id" \
+  --value "$IDENTITY_STORE_ID" \
+  --type "String" \
+  --region "$AWS_REGION" \
+  --overwrite
+
+# SSO Instance ARN
+echo "SSO Instance ARNを入力してください（例: arn:aws:sso:::instance/ssoins-1234567890abcdef）:"
+read SSO_INSTANCE_ARN
+
+aws ssm put-parameter \
+  --name "/evidence/sso-instance-arn" \
+  --value "$SSO_INSTANCE_ARN" \
+  --type "String" \
+  --region "$AWS_REGION" \
+  --overwrite
+
 echo "完了しました！"
 echo ""
 echo "次に、CloudFormationテンプレートを更新してCodeBuildに環境変数を追加してください。"

@@ -196,6 +196,12 @@ Resources:
           - Name: EVIDENCE_OPENSEARCH_SSL_VERIFY
             Type: PARAMETER_STORE
             Value: /evidence/opensearch-ssl-verify
+          - Name: EVIDENCE_IDENTITY_STORE_ID
+            Type: PARAMETER_STORE
+            Value: /evidence/identity-store-id
+          - Name: EVIDENCE_SSO_INSTANCE_ARN
+            Type: PARAMETER_STORE
+            Value: /evidence/sso-instance-arn
       Source:
         Type: GITHUB
         Location: !Ref GitHubRepo
