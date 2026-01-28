@@ -1,0 +1,51 @@
+version: 0.2
+
+# Evidenceの静的サイトをビルドしてS3にデプロイするためのbuildspec
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo "Node.jsバージョンを確認"
+      - node --version
+      - npm --version
+
+  pre_build:
+    commands:
+      - echo "依存関係をインストール中..."
+      - npm ci
+      - echo "環境変数を確認"
+      - env | grep -E "^(AWS_|EVIDENCE_)" || true
+
+  build:
+    commands:
+      - echo "Evidenceの静的サイトをビルド中..."
+      - npm run build
+      - echo "ビルド完了"
+      - ls -la build/
+
+  post_build:
+    commands:
+      - echo "S3にデプロイ中..."
+      - |
+        if [ -z "$S3_BUCKET" ]; then
+          echo "エラー: S3_BUCKET環境変数が設定されていません"
+          exit 1
+        fi
+      - aws s3 sync build/ s3://${S3_BUCKET}/ --delete --cache-control "public, max-age=3600"
+      - |
+        if [ ! -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+          echo "CloudFrontキャッシュを無効化中..."
+          aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+        fi
+      - echo "デプロイ完了"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: build
+  name: evidence-static-site
+
+cache:
+  paths:
+    - 'node_modules/**/*'

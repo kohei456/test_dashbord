@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Evidenceアプリケーション
+  evidence:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # 認証プロキシ（OAuth2 Proxy）
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    ports:
+      - "4180:4180"
+    environment:
+      - OAUTH2_PROXY_UPSTREAMS=http://evidence:3000/
+      - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
+      - OAUTH2_PROXY_EMAIL_DOMAINS=*
+      # 以下は実際の認証プロバイダーの情報に置き換えてください
+      - OAUTH2_PROXY_PROVIDER=google
+      - OAUTH2_PROXY_CLIENT_ID=your-client-id
+      - OAUTH2_PROXY_CLIENT_SECRET=your-client-secret
+      - OAUTH2_PROXY_COOKIE_SECRET=your-cookie-secret
+    depends_on:
+      - evidence
+    restart: unless-stopped
