@@ -160,6 +160,23 @@ Resources:
                   - 'ssm:GetParameter'
                   - 'ssm:GetParameters'
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/evidence/*'
+              - Effect: Allow
+                Action:
+                  - 'identitystore:ListUsers'
+                  - 'identitystore:DescribeUser'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'sso:ListInstances'
+                  - 'sso:ListPermissionSets'
+                  - 'sso:ListAccountAssignments'
+                  - 'sso:DescribePermissionSet'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'organizations:ListAccounts'
+                  - 'organizations:DescribeAccount'
+                Resource: '*'
 
   # CodeBuildプロジェクト
   CodeBuildProject:

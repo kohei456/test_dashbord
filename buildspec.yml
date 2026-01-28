@@ -22,9 +22,10 @@ phases:
       - echo "Evidenceの静的サイトをビルド中..."
       - echo "データソースを生成中..."
       - npm run sources || echo "データソース生成をスキップ"
-      - npm run build
+      - echo "ユーザー別レポートをビルド中..."
+      - npm run build:users
       - echo "ビルド完了"
-      - ls -la build/
+      - ls -la build-users/
 
   post_build:
     commands:
@@ -34,7 +35,22 @@ phases:
           echo "エラー: S3_BUCKET環境変数が設定されていません"
           exit 1
         fi
-      - aws s3 sync build/ s3://${S3_BUCKET}/ --delete --cache-control "public, max-age=3600"
+      - echo "ユーザー別ディレクトリをS3に同期中..."
+      - |
+        for user_dir in build-users/user-*; do
+          if [ -d "$user_dir" ]; then
+            user_id=$(basename "$user_dir")
+            echo "アップロード中: $user_id"
+            aws s3 sync "$user_dir/" "s3://${S3_BUCKET}/${user_id}/" --delete --cache-control "public, max-age=3600"
+          fi
+        done
+      - echo "共通ファイル（ホームページなど）をアップロード中..."
+      - |
+        if [ -d "build-users/user-"* ]; then
+          # 最初のユーザーディレクトリから共通ファイルをコピー
+          first_user_dir=$(ls -d build-users/user-* | head -n 1)
+          aws s3 cp "$first_user_dir/index.html" "s3://${S3_BUCKET}/index.html" --cache-control "public, max-age=3600"
+        fi
       - |
         if [ ! -z "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
           echo "CloudFrontキャッシュを無効化中..."
@@ -45,8 +61,8 @@ phases:
 artifacts:
   files:
     - '**/*'
-  base-directory: build
-  name: evidence-static-site
+  base-directory: build-users
+  name: evidence-user-reports
 
 cache:
   paths:
