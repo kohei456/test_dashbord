@@ -1,94 +1,164 @@
 ---
-title: Welcome to Evidence
+title: マイダッシュボード
 ---
 
-# 🎉 Evidenceダッシュボードへようこそ
+# 👤 あなたのダッシュボード
 
-このサイトは、AWS CodeBuild + S3 + CloudFrontでデプロイされています。
-
-## 📊 利用可能なダッシュボード
-
-- [👥 ユーザーダッシュボード一覧](/user-list) - 各ユーザー専用のダッシュボード（ユーザー別S3プレフィックス）
-- [�  ユーザー一覧](/users) - Identity Centerユーザー情報
-- [� アカウント一覧]ド(/accounts) - AWSアカウント別のセキュリティ検出結果
-- [📊 全体ダッシュボード](/test_data) - すべてのアカウントの検出結果を統合表示
-
-## 🏗️ アーキテクチャ
-
-### フェーズ2（現在）: ユーザー別ビルド
-
-- ✅ Identity Centerからユーザー情報を取得
-- ✅ ユーザー毎に専用ディレクトリを作成（`user-{userId}/`）
-- ✅ S3にユーザー別プレフィックスでアップロード
-- ⏳ 認証・認可機能（フェーズ3で実装予定）
-
-### 次のステップ（フェーズ3）
-
-- ALB + Cognito + IAM Identity Center連携
-- JWT検証とユーザーID抽出
-- Fargateでのユーザー別ルーティング
-- アクセス制御
+このダッシュボードには、あなたがアクセス権限を持つアカウントの情報のみが表示されます。
 
 ---
 
-## 👥 Identity Centerユーザー
+## 🔐 あなたがアクセスできるアカウント
 
-各ユーザーがアクセスできるアカウントの検出結果のみを表示します。
-
-```sql top_users
+```sql my_accounts
 select 
     user_id,
     user_name,
     display_name,
+    email,
     accessible_accounts_count
 from identity_center.users
-order by accessible_accounts_count desc
-limit 5
+limit 1
 ```
 
-### アクセス可能アカウントが多いユーザー（トップ5）
+<BigValue 
+    data={my_accounts} 
+    value=display_name
+    title="ユーザー名"
+/>
 
-<DataTable data={top_users}>
-    <Column id=user_name title="ユーザー名"/>
-    <Column id=display_name title="表示名"/>
-    <Column id=accessible_accounts_count title="アクセス可能アカウント数"/>
-</DataTable>
+<BigValue 
+    data={my_accounts} 
+    value=email
+    title="メールアドレス"
+/>
 
-**ユーザー別ダッシュボードにアクセスするには、[ユーザーダッシュボード一覧](/user-list)をご覧ください。**
+<BigValue 
+    data={my_accounts} 
+    value=accessible_accounts_count
+    title="アクセス可能アカウント数"
+/>
 
 ---
 
-## 🔐 アカウント別ダッシュボード
+## 📋 アクセス可能なアカウント一覧
 
-各AWSアカウントの検出結果を個別に確認できます。
-
-```sql top_accounts
+```sql accessible_accounts
 select 
     account_id,
-    finding_count,
-    '/account/' || account_id as dashboard_link
-from opensearch_data.accounts
-order by finding_count desc
-limit 5
+    account_name
+from identity_center.user_account_mapping
+order by account_name
 ```
 
-### 検出結果が多いアカウント（トップ5）
-
 <DataTable 
-    data={top_accounts}
-    link=dashboard_link
+    data={accessible_accounts}
+    search=true
 >
     <Column id=account_id title="アカウントID"/>
-    <Column id=finding_count title="検出結果数"/>
-    <Column id=dashboard_link title="ダッシュボード" contentType=link linkLabel="詳細を見る"/>
+    <Column id=account_name title="アカウント名"/>
 </DataTable>
 
-## What's Next?
-- [Connect your data sources](settings)
-- Edit/add markdown files in the `pages` folder
-- Deploy your project with [Evidence Cloud](https://evidence.dev/cloud)
+---
 
-## Get Support
-- Message us on [Slack](https://slack.evidence.dev/)
-- Read the [Docs](https://docs.evidence.dev/)
-- Open an issue on [Github](https://github.com/evidence-dev/evidence)
+## 📊 セキュリティ検出結果の概要
+
+あなたがアクセスできるアカウントのセキュリティ検出結果を表示します。
+
+```sql findings_summary
+select 
+    count(*) as total_findings,
+    count(distinct severity) as severity_types,
+    count(distinct cloud_region) as regions
+from opensearch_data.account_findings
+```
+
+<BigValue 
+    data={findings_summary} 
+    value=total_findings
+    title="検出結果総数"
+/>
+
+<BigValue 
+    data={findings_summary} 
+    value=severity_types
+    title="重要度の種類"
+/>
+
+<BigValue 
+    data={findings_summary} 
+    value=regions
+    title="リージョン数"
+/>
+
+---
+
+## 📈 重要度別の分布
+
+```sql severity_distribution
+select 
+    severity,
+    count(*) as count
+from opensearch_data.account_findings
+group by severity
+order by count desc
+```
+
+<BarChart 
+    data={severity_distribution}
+    x=severity
+    y=count
+    title="重要度別の検出結果数"
+/>
+
+---
+
+## 🏢 アカウント別の検出結果数
+
+```sql account_findings_count
+select 
+    af.account_id,
+    count(*) as finding_count
+from opensearch_data.account_findings af
+group by af.account_id
+order by finding_count desc
+```
+
+<BarChart 
+    data={account_findings_count}
+    x=account_id
+    y=finding_count
+    title="アカウント別の検出結果数"
+/>
+
+---
+
+## 🔍 最新の検出結果
+
+```sql recent_findings
+select 
+    _id,
+    severity,
+    finding_info_title,
+    finding_info_desc,
+    account_id,
+    cloud_region,
+    compliance_status,
+    time
+from opensearch_data.account_findings
+order by time desc
+limit 50
+```
+
+<DataTable 
+    data={recent_findings} 
+    search=true 
+    rows=20
+>
+    <Column id=severity title="重要度"/>
+    <Column id=finding_info_title title="タイトル"/>
+    <Column id=account_id title="アカウントID"/>
+    <Column id=cloud_region title="リージョン"/>
+    <Column id=compliance_status title="コンプライアンス"/>
+    <Column id=time title="検出時刻"/>
+</DataTable>
