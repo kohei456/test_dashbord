@@ -212,6 +212,9 @@ Resources:
           - Name: EVIDENCE_SSO_INSTANCE_ARN
             Type: PARAMETER_STORE
             Value: /evidence/sso-instance-arn
+          - Name: EVIDENCE_MANAGEMENT_ACCOUNT_ROLE_ARN
+            Type: PARAMETER_STORE
+            Value: /evidence/management-account-role-arn
       Source:
         Type: GITHUB
         Location: !Ref GitHubRepo
