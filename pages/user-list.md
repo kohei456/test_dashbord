@@ -32,18 +32,16 @@ order by user_name
 
 各ユーザーのダッシュボードにアクセスするには、ブラウザのアドレスバーに以下のURL形式を入力してください：
 
-```
-https://your-cloudfront-domain.cloudfront.net/user-{userId}/
-```
+**URL形式:** `https://your-cloudfront-domain.cloudfront.net/user-{userId}/`
 
 **手順：**
 1. 上記のテーブルから、アクセスしたいユーザーの「ユーザーID」をコピー
-2. ブラウザのアドレスバーに `https://your-cloudfront-domain.cloudfront.net/user-{コピーしたユーザーID}/` を入力
+2. ブラウザのアドレスバーにURLを入力（`user-`の後にユーザーIDを追加）
 3. Enterキーを押してアクセス
 
-例：
-- ユーザーID `97943a18-7031-7092-f256-e614c146f15d` の場合
-- URL: `https://your-cloudfront-domain.cloudfront.net/user-97943a18-7031-7092-f256-e614c146f15d/`
+**例：**
+- ユーザーID: `97943a18-7031-7092-f256-e614c146f15d`
+- アクセスURL: `https://your-cloudfront-domain.cloudfront.net/user-97943a18-7031-7092-f256-e614c146f15d/`
 
 ## 🔐 セキュリティについて
 
