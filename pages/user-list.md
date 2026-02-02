@@ -8,8 +8,7 @@ select
     user_name,
     display_name,
     email,
-    accessible_accounts_count,
-    '/user-' || user_id || '/' as dashboard_url
+    accessible_accounts_count
 from identity_center.users
 order by user_name
 ```
@@ -21,26 +20,30 @@ order by user_name
 <DataTable 
     data={user_list}
     search=true
-    link=dashboard_url
 >
     <Column id=user_name title="ユーザー名"/>
     <Column id=display_name title="表示名"/>
     <Column id=email title="メールアドレス"/>
     <Column id=accessible_accounts_count title="アクセス可能アカウント数"/>
-    <Column id=dashboard_url title="ダッシュボード" contentType=link linkLabel="開く"/>
+    <Column id=user_id title="ユーザーID"/>
 </DataTable>
 
 ## 📝 アクセス方法
 
-各ユーザーのダッシュボードにアクセスするには、以下のURL形式を使用してください：
+各ユーザーのダッシュボードにアクセスするには、ブラウザのアドレスバーに以下のURL形式を入力してください：
 
 ```
 https://your-cloudfront-domain.cloudfront.net/user-{userId}/
 ```
 
+**手順：**
+1. 上記のテーブルから、アクセスしたいユーザーの「ユーザーID」をコピー
+2. ブラウザのアドレスバーに `https://your-cloudfront-domain.cloudfront.net/user-{コピーしたユーザーID}/` を入力
+3. Enterキーを押してアクセス
+
 例：
-- ユーザーID `12345678-1234-1234-1234-123456789012` の場合
-- URL: `https://your-cloudfront-domain.cloudfront.net/user-12345678-1234-1234-1234-123456789012/`
+- ユーザーID `97943a18-7031-7092-f256-e614c146f15d` の場合
+- URL: `https://your-cloudfront-domain.cloudfront.net/user-97943a18-7031-7092-f256-e614c146f15d/`
 
 ## 🔐 セキュリティについて
 

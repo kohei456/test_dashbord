@@ -40,8 +40,7 @@ select
     user_id,
     user_name,
     display_name,
-    accessible_accounts_count,
-    '/user-' || user_id || '/' as dashboard_link
+    accessible_accounts_count
 from identity_center.users
 order by accessible_accounts_count desc
 limit 5
@@ -49,15 +48,13 @@ limit 5
 
 ### アクセス可能アカウントが多いユーザー（トップ5）
 
-<DataTable 
-    data={top_users}
-    link=dashboard_link
->
+<DataTable data={top_users}>
     <Column id=user_name title="ユーザー名"/>
     <Column id=display_name title="表示名"/>
     <Column id=accessible_accounts_count title="アクセス可能アカウント数"/>
-    <Column id=dashboard_link title="ダッシュボード" contentType=link linkLabel="詳細を見る"/>
 </DataTable>
+
+**ユーザー別ダッシュボードにアクセスするには、[ユーザーダッシュボード一覧](/user-list)をご覧ください。**
 
 ---
 
