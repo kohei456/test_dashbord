@@ -1,6 +1,7 @@
 import { IdentitystoreClient, ListUsersCommand } from "@aws-sdk/client-identitystore";
 import { SSOAdminClient, ListAccountAssignmentsCommand, ListPermissionSetsCommand } from "@aws-sdk/client-sso-admin";
 import { OrganizationsClient, ListAccountsCommand } from "@aws-sdk/client-organizations";
+import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -8,6 +9,7 @@ import path from 'path';
 // 環境変数から設定を取得
 const IDENTITY_STORE_ID = process.env.EVIDENCE_IDENTITY_STORE_ID;
 const SSO_INSTANCE_ARN = process.env.EVIDENCE_SSO_INSTANCE_ARN;
+const MANAGEMENT_ACCOUNT_ROLE_ARN = process.env.EVIDENCE_MANAGEMENT_ACCOUNT_ROLE_ARN;
 const AWS_REGION = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-northeast-1';
 
 if (!IDENTITY_STORE_ID || !SSO_INSTANCE_ARN) {
@@ -18,12 +20,54 @@ if (!IDENTITY_STORE_ID || !SSO_INSTANCE_ARN) {
 console.log("=== ユーザー別レポートビルドを開始 ===");
 console.log(`Identity Store ID: ${IDENTITY_STORE_ID}`);
 console.log(`SSO Instance ARN: ${SSO_INSTANCE_ARN}`);
+console.log(`Management Account Role ARN: ${MANAGEMENT_ACCOUNT_ROLE_ARN || 'Not set (using current credentials)'}`);
 console.log(`AWS Region: ${AWS_REGION}`);
 
-// クライアントの初期化
-const identityStoreClient = new IdentitystoreClient({ region: AWS_REGION });
-const ssoAdminClient = new SSOAdminClient({ region: AWS_REGION });
-const organizationsClient = new OrganizationsClient({ region: AWS_REGION });
+/**
+ * 管理アカウントのロールをAssumeして認証情報を取得
+ */
+async function getManagementAccountCredentials() {
+    if (!MANAGEMENT_ACCOUNT_ROLE_ARN) {
+        console.log("管理アカウントロールが設定されていません。現在の認証情報を使用します。");
+        return undefined;
+    }
+
+    console.log("\n--- 管理アカウントのロールをAssumeしています ---");
+    const stsClient = new STSClient({ region: AWS_REGION });
+    
+    try {
+        const assumeRoleCommand = new AssumeRoleCommand({
+            RoleArn: MANAGEMENT_ACCOUNT_ROLE_ARN,
+            RoleSessionName: 'EvidenceUserReportsBuild',
+            DurationSeconds: 3600,
+        });
+        
+        const response = await stsClient.send(assumeRoleCommand);
+        console.log("✓ ロールのAssumeに成功しました");
+        
+        return {
+            accessKeyId: response.Credentials.AccessKeyId,
+            secretAccessKey: response.Credentials.SecretAccessKey,
+            sessionToken: response.Credentials.SessionToken,
+        };
+    } catch (error) {
+        console.error("✗ ロールのAssumeに失敗しました:", error.message);
+        throw error;
+    }
+}
+
+// 管理アカウントの認証情報を取得
+const managementAccountCredentials = await getManagementAccountCredentials();
+
+// クライアントの初期化（管理アカウントの認証情報を使用）
+const clientConfig = {
+    region: AWS_REGION,
+    ...(managementAccountCredentials && { credentials: managementAccountCredentials }),
+};
+
+const identityStoreClient = new IdentitystoreClient(clientConfig);
+const ssoAdminClient = new SSOAdminClient(clientConfig);
+const organizationsClient = new OrganizationsClient(clientConfig);
 
 /**
  * ユーザーとアカウントマッピングを取得

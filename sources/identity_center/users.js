@@ -1,10 +1,12 @@
 import { IdentitystoreClient, ListUsersCommand } from "@aws-sdk/client-identitystore";
 import { SSOAdminClient, ListAccountAssignmentsCommand, ListPermissionSetsCommand } from "@aws-sdk/client-sso-admin";
 import { OrganizationsClient, ListAccountsCommand } from "@aws-sdk/client-organizations";
+import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 
 // 環境変数から設定を取得
 const IDENTITY_STORE_ID = process.env.EVIDENCE_IDENTITY_STORE_ID;
 const SSO_INSTANCE_ARN = process.env.EVIDENCE_SSO_INSTANCE_ARN;
+const MANAGEMENT_ACCOUNT_ROLE_ARN = process.env.EVIDENCE_MANAGEMENT_ACCOUNT_ROLE_ARN;
 const AWS_REGION = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-northeast-1';
 
 if (!IDENTITY_STORE_ID || !SSO_INSTANCE_ARN) {
@@ -13,10 +15,43 @@ if (!IDENTITY_STORE_ID || !SSO_INSTANCE_ARN) {
     );
 }
 
+/**
+ * 管理アカウントのロールをAssumeして認証情報を取得
+ */
+async function getManagementAccountCredentials() {
+    if (!MANAGEMENT_ACCOUNT_ROLE_ARN) {
+        return undefined;
+    }
+
+    const stsClient = new STSClient({ region: AWS_REGION });
+    
+    const assumeRoleCommand = new AssumeRoleCommand({
+        RoleArn: MANAGEMENT_ACCOUNT_ROLE_ARN,
+        RoleSessionName: 'EvidenceIdentityCenterDataSource',
+        DurationSeconds: 3600,
+    });
+    
+    const response = await stsClient.send(assumeRoleCommand);
+    
+    return {
+        accessKeyId: response.Credentials.AccessKeyId,
+        secretAccessKey: response.Credentials.SecretAccessKey,
+        sessionToken: response.Credentials.SessionToken,
+    };
+}
+
+// 管理アカウントの認証情報を取得
+const managementAccountCredentials = await getManagementAccountCredentials();
+
 // クライアントの初期化
-const identityStoreClient = new IdentitystoreClient({ region: AWS_REGION });
-const ssoAdminClient = new SSOAdminClient({ region: AWS_REGION });
-const organizationsClient = new OrganizationsClient({ region: AWS_REGION });
+const clientConfig = {
+    region: AWS_REGION,
+    ...(managementAccountCredentials && { credentials: managementAccountCredentials }),
+};
+
+const identityStoreClient = new IdentitystoreClient(clientConfig);
+const ssoAdminClient = new SSOAdminClient(clientConfig);
+const organizationsClient = new OrganizationsClient(clientConfig);
 
 // ユーザー一覧を取得
 const listUsersCommand = new ListUsersCommand({
