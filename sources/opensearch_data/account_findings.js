@@ -53,7 +53,7 @@ const response = await client.search({
 });
 
 // データを平坦化し、account_idカラムを追加
-export const data = response.body.hits.hits.map((hit) => {
+let allData = response.body.hits.hits.map((hit) => {
     const flatData = flatten(hit._source);
     return {
         _id: hit._id,
@@ -61,3 +61,14 @@ export const data = response.body.hits.hits.map((hit) => {
         ...flatData,
     };
 });
+
+// 環境変数でユーザーアカウントが指定されている場合はフィルタリング
+const userAccounts = process.env.EVIDENCE_USER_ACCOUNTS;
+
+if (userAccounts) {
+    const accountIds = userAccounts.split(',').map(id => id.trim());
+    allData = allData.filter(item => accountIds.includes(item.account_id));
+    console.log(`ユーザー別ビルド: ${accountIds.length}個のアカウントの検出結果のみを表示（${allData.length}件）`);
+}
+
+export const data = allData;

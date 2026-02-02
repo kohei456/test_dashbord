@@ -77,4 +77,14 @@ for (const user of usersResponse.Users) {
     }
 }
 
-export const data = mappings;
+// 環境変数でユーザーアカウントが指定されている場合はフィルタリング
+const userAccounts = process.env.EVIDENCE_USER_ACCOUNTS;
+let filteredMappings = mappings;
+
+if (userAccounts) {
+    const accountIds = userAccounts.split(',').map(id => id.trim());
+    filteredMappings = mappings.filter(mapping => accountIds.includes(mapping.account_id));
+    console.log(`ユーザー別ビルド: ${accountIds.length}個のアカウントにフィルタリング`);
+}
+
+export const data = filteredMappings;

@@ -130,4 +130,13 @@ for (const user of usersResponse.Users) {
     });
 }
 
-export const data = usersWithAccess;
+// 環境変数でユーザーIDが指定されている場合は、そのユーザーのみを返す
+const currentUserId = process.env.EVIDENCE_USER_ID;
+let filteredUsers = usersWithAccess;
+
+if (currentUserId) {
+    filteredUsers = usersWithAccess.filter(user => user.user_id === currentUserId);
+    console.log(`ユーザー別ビルド: ユーザーID ${currentUserId} のみを表示`);
+}
+
+export const data = filteredUsers;
