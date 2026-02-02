@@ -37,10 +37,11 @@ title: Welcome to Evidence
 
 ```sql top_users
 select 
+    user_id,
     user_name,
     display_name,
     accessible_accounts_count,
-    '/user/' || user_name as dashboard_link
+    '/user-' || user_id || '/' as dashboard_link
 from identity_center.users
 order by accessible_accounts_count desc
 limit 5

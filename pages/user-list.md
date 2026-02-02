@@ -4,10 +4,12 @@
 
 ```sql user_list
 select 
+    user_id,
     user_name,
     display_name,
     email,
-    accessible_accounts_count
+    accessible_accounts_count,
+    '/user-' || user_id || '/' as dashboard_url
 from identity_center.users
 order by user_name
 ```
@@ -19,11 +21,13 @@ order by user_name
 <DataTable 
     data={user_list}
     search=true
+    link=dashboard_url
 >
     <Column id=user_name title="ユーザー名"/>
     <Column id=display_name title="表示名"/>
     <Column id=email title="メールアドレス"/>
     <Column id=accessible_accounts_count title="アクセス可能アカウント数"/>
+    <Column id=dashboard_url title="ダッシュボード" contentType=link linkLabel="開く"/>
 </DataTable>
 
 ## 📝 アクセス方法
