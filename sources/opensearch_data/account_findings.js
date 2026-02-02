@@ -55,9 +55,11 @@ const response = await client.search({
 // データを平坦化し、account_idカラムを追加
 let allData = response.body.hits.hits.map((hit) => {
     const flatData = flatten(hit._source);
+    // 新しいインデックス構造に対応: cloud.account.uid
+    const accountId = flatData.cloud_account_uid || 'unknown';
     return {
         _id: hit._id,
-        account_id: flatData.cloud_account_uid || 'unknown', // アカウントIDを明示的に追加
+        account_id: accountId, // アカウントIDを明示的に追加
         ...flatData,
     };
 });

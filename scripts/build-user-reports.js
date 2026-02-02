@@ -180,6 +180,13 @@ async function buildUserReports(userAccountMap) {
                 EVIDENCE_USER_ACCOUNTS: userInfo.accountIds.join(','),
             };
 
+            // データソースを再生成（ユーザー固有のデータを取得）
+            console.log("  データソースを生成中...");
+            execSync('npm run sources', {
+                env: env,
+                stdio: 'inherit',
+            });
+
             // Evidenceビルドを実行
             console.log("  Evidenceビルドを実行中...");
             execSync('npm run build', {
