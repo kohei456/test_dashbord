@@ -1,4 +1,4 @@
-import { IdentitystoreClient, ListUsersCommand } from "@aws-sdk/client-identitystore";
+import { IdentitystoreClient, ListUsersCommand, ListGroupMembershipsForMemberCommand } from "@aws-sdk/client-identitystore";
 import { SSOAdminClient, ListAccountAssignmentsCommand, ListPermissionSetsCommand } from "@aws-sdk/client-sso-admin";
 import { OrganizationsClient, ListAccountsCommand } from "@aws-sdk/client-organizations";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
@@ -85,7 +85,25 @@ for (const user of usersResponse.Users) {
     // このユーザーがアクセスできるアカウントを収集
     const accessibleAccounts = [];
 
-    // 各Permission Setについて、このユーザーの割り当てを確認
+    // ユーザーが所属するグループを取得
+    const userGroupIds = new Set();
+    try {
+        const listGroupMembershipsCommand = new ListGroupMembershipsForMemberCommand({
+            IdentityStoreId: IDENTITY_STORE_ID,
+            MemberId: {
+                UserId: userId,
+            },
+        });
+        const groupMembershipsResponse = await identityStoreClient.send(listGroupMembershipsCommand);
+        
+        for (const membership of groupMembershipsResponse.GroupMemberships || []) {
+            userGroupIds.add(membership.GroupId);
+        }
+    } catch (error) {
+        console.error(`Error getting group memberships for user ${userName}:`, error.message);
+    }
+
+    // 各Permission Setについて、このユーザーとグループの割り当てを確認
     for (const permissionSetArn of permissionSetsResponse.PermissionSets) {
         // 各アカウントについて確認
         for (const account of accountsResponse.Accounts) {
@@ -97,7 +115,7 @@ for (const user of usersResponse.Users) {
                 });
                 const assignmentsResponse = await ssoAdminClient.send(listAssignmentsCommand);
 
-                // このユーザーへの割り当てがあるか確認
+                // ユーザー直接の割り当てをチェック
                 const userAssignment = assignmentsResponse.AccountAssignments?.find(
                     assignment => assignment.PrincipalId === userId && assignment.PrincipalType === 'USER'
                 );
@@ -107,6 +125,20 @@ for (const user of usersResponse.Users) {
                         account_id: account.Id,
                         account_name: account.Name,
                     });
+                }
+
+                // グループ経由の割り当てをチェック
+                for (const groupId of userGroupIds) {
+                    const groupAssignment = assignmentsResponse.AccountAssignments?.find(
+                        assignment => assignment.PrincipalId === groupId && assignment.PrincipalType === 'GROUP'
+                    );
+
+                    if (groupAssignment) {
+                        accessibleAccounts.push({
+                            account_id: account.Id,
+                            account_name: account.Name,
+                        });
+                    }
                 }
             } catch (error) {
                 // エラーは無視して続行

@@ -1,4 +1,4 @@
-import { IdentitystoreClient, ListUsersCommand } from "@aws-sdk/client-identitystore";
+import { IdentitystoreClient, ListUsersCommand, ListGroupMembershipsForMemberCommand } from "@aws-sdk/client-identitystore";
 import { SSOAdminClient, ListAccountAssignmentsCommand, ListPermissionSetsCommand } from "@aws-sdk/client-sso-admin";
 import { OrganizationsClient, ListAccountsCommand } from "@aws-sdk/client-organizations";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
@@ -105,7 +105,29 @@ async function getUserAccountMapping() {
         
         const accessibleAccounts = new Set();
 
-        // 各Permission Setについて、このユーザーの割り当てを確認
+        // ユーザーが所属するグループを取得
+        const userGroupIds = new Set();
+        try {
+            const listGroupMembershipsCommand = new ListGroupMembershipsForMemberCommand({
+                IdentityStoreId: IDENTITY_STORE_ID,
+                MemberId: {
+                    UserId: userId,
+                },
+            });
+            const groupMembershipsResponse = await identityStoreClient.send(listGroupMembershipsCommand);
+            
+            for (const membership of groupMembershipsResponse.GroupMemberships || []) {
+                userGroupIds.add(membership.GroupId);
+            }
+            
+            if (userGroupIds.size > 0) {
+                console.log(`  所属グループ数: ${userGroupIds.size}`);
+            }
+        } catch (error) {
+            console.error(`  グループメンバーシップ取得エラー: ${error.message}`);
+        }
+
+        // 各Permission Setについて、このユーザーとグループの割り当てを確認
         for (const permissionSetArn of permissionSetsResponse.PermissionSets) {
             // 各アカウントについて確認
             for (const account of accountsResponse.Accounts) {
@@ -117,13 +139,24 @@ async function getUserAccountMapping() {
                     });
                     const assignmentsResponse = await ssoAdminClient.send(listAssignmentsCommand);
 
-                    // このユーザーへの割り当てがあるか確認
+                    // ユーザー直接の割り当てをチェック
                     const userAssignment = assignmentsResponse.AccountAssignments?.find(
                         assignment => assignment.PrincipalId === userId && assignment.PrincipalType === 'USER'
                     );
 
                     if (userAssignment) {
                         accessibleAccounts.add(account.Id);
+                    }
+
+                    // グループ経由の割り当てをチェック
+                    for (const groupId of userGroupIds) {
+                        const groupAssignment = assignmentsResponse.AccountAssignments?.find(
+                            assignment => assignment.PrincipalId === groupId && assignment.PrincipalType === 'GROUP'
+                        );
+
+                        if (groupAssignment) {
+                            accessibleAccounts.add(account.Id);
+                        }
                     }
                 } catch (error) {
                     // エラーは無視して続行
